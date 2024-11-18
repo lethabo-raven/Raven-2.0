@@ -6,11 +6,11 @@ import { RouterView } from 'vue-router';
 <template>
     <header>
         <div>
-            <Navbar />
+            <Navbar/>
         </div>
     </header>
     <body>
-        <div style="margin: 50px;">
+        <div style="margin: 40px;">
             <RouterView/>
         </div>
     </body>

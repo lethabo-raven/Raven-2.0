@@ -8,14 +8,12 @@
         :required="true"
         :defaultValue="defaultValue"
         :label="'Invoice Date'"
-        :format="'yyyy-MM-dd'"
-        :style="{ width: '250px' }"></datepicker>
+        :format="'yyyy-MM-dd'"></datepicker>
         </div>
         <div class="mb-3">
           <KInput 
           :required="true"
           :label="'Client Name'"
-          :style="{ width: '250px' }"
           
           ></KInput>
         </div>
@@ -25,7 +23,6 @@
           Client Address
           <br/>
           <TextArea 
-          :style="{ width: '250px'}"
           :required="true"
           :autoSize="true"
           :rows="1"
@@ -35,8 +32,7 @@
         <div class="mb-3">
           <KInput 
           :label="'Client Email Address'"
-          :required="true"
-          :style="{ width: '250px' }"></KInput>
+          :required="true"></KInput>
         </div>
         </div>
       </div>

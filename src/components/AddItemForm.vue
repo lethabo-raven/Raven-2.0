@@ -4,17 +4,18 @@
     <div class="row align-items-start">
       <div class="col">
       <div class="form-item">
-          <datepicker :style="{ width: '300px' }"
+          <datepicker
                   :default-value="defaultValue"
                   :format="'yyyy-MM-dd'"
                   :name="Date"
                   :label="'Date:'"
                   :value="date"
+                  v-on:change="dateChange"
               ></datepicker>
         </div>
   <div class="form-item">
     <dropdownlist
-      :style="{ width: '300px' }"
+    :style="{width: '250px'}"
       :data-items="items"
       :text-field="'Court'"
       :label="'Court:'"
@@ -26,20 +27,12 @@
       :filterable="true"
     />
   </div>
-  <div class="form-item" style="display: none;">
-    <dropdownlist
-      :style="{ width: '300px' }"
-      :label="'By Attorney/Candidate:'"
-      :default-value="'Select Attorney/Candidate'"
-      :data-items="datavalues"
-    />
-  </div>
 </div>
 <div class="col">
   <div class="form-item">
     <dropdownlist
+      :style="{ width: '250px' }"
       :label="'Category:'"
-      :style="{ width: '300px' }"
       :disabled="!hasCourt"
       :data-items="products"
       :name="'Category'"
@@ -51,8 +44,8 @@
   </div>
   <div class="form-item">
     <dropdownlist
+      :style="{ width: '250px' }"
       :label="'Item:'"
-      :style="{ width: '300px' }"
       :disabled="!hasCategory"
       :text-Field="'Item'"
       :data-items="orders"
@@ -67,7 +60,6 @@
   </div>
       <div class="form-item">
           <numerictextbox
-            :style="{ width: '300px' }"
             :name="'Quantity'"
             :value="quantity"
             :label="'Quantity:'"
@@ -121,6 +113,8 @@ const courts = [
         {Court:"Magistrate Court-Scale C"},
         {Court:"Magistrate Court-Scale D"}
       ];
+let datestr = "";
+let changeNo = 0;
 export default {
   components: {
     'k-input': Input,
@@ -179,32 +173,51 @@ export default {
   },
   methods: {
     save() {
-      const data1 = {
-        ID: 1,
-        Date: new Date(),
-        Price: 0,
-        Court: '',
-        Category: '',
-        Item: '',
-        Quantity: 1,
-        Amount: 0,
-      };
-      data1.Item = this.item.Item;
-      data1.Court = this.item.Court;
-      data1.Category = this.item.Category;
-      data1.Price = this.item.Price;
-      data1.Quantity = quantityValue;
-      data1.Amount = this.item.Price * this.quantity;
-      data1.ID = items.length + 1;
-      this.invitem.push(data1);
-      console.log(quantityValue);
+      let Courtdata = [];
+        Courtdata.push(data[0].Court)
+        for (let x = 1; x < data.length; x++){
+            if(data[x].Court ==  data[x - 1].Court){
+                continue
+            }
+            else{
+                Courtdata.push(data[x].Court)
+            }
+        }
+        console.log(Courtdata)
+      // const data1 = {
+      //   ID: 1,
+      //   Date: new Date(),
+      //   Price: 0,
+      //   Court: '',
+      //   Category: '',
+      //   Item: '',
+      //   Quantity: 1,
+      //   Amount: 0,
+      // };
+      // if (changeNo == 0){
+      //   data1.Date = new Date();
+      // }
+      // else{
+      //   data1.Date = datestr;
+      // }
+      // data1.Item = this.item.Item;
+      // data1.Court = this.item.Court;
+      // data1.Category = this.item.Category;
+      // data1.Price = this.item.Price;
+      // data1.Quantity = quantityValue;
+      // data1.Amount = this.item.Price * quantityValue;
+      // data1.ID = items.length + 1;
+      // this.invitem.splice(0, 0, data1);
+      // datestr = "";
+      // changeNo = 0;
+      // console.log(data1.Item)
     },
     dateChange(event) {
-    const date = event.value;
-    data1.Date = date;
-  },
+      const date = event.value;
+      changeNo += 1;
+      datestr = date;
+    },
   quantityChange(event){
-    quantityValue = 1;
     this.quantity = event.value;
     quantityValue = event.value;
   },
