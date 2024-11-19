@@ -18,6 +18,9 @@
                     @remove="remove"
                     />      
         </template>
+        <template v-slot:itemDropDown>
+            <dropdown/>
+        </template>
         <grid-toolbar>
             <dropdownlist
                 :style="{ width: '200px' }"
@@ -30,6 +33,7 @@
                 :value="court"
                 :filterable="true"
                 v-on:open="loadCourtData"
+                v-bind:courtValue
                 />
                 <dropdownlist
                 :style="{ width: '250px' }"
@@ -52,7 +56,6 @@
         <div style="padding: 10px; left: 0px;">
             <kbutton 
                     :theme-color="'primary'"
-                    @click='geninv'
                     type="submit" >
                 Generate Invoice
             </kbutton>
@@ -61,17 +64,17 @@
 <script>
 import { Grid, GridToolbar, GridNoRecords } from '@progress/kendo-vue-grid';
 import { items } from '@/appdata/InvoiceItems.js';
-import DialogContainer from './AddItemForm.vue';
 import CommandCell from './CommandCell.vue';
 import { Button } from '@progress/kendo-vue-buttons';
 import { Form } from '@progress/kendo-vue-form';
 import FormContent from './ClientInforForm.vue';
 import { DropDownList } from '@progress/kendo-vue-dropdowns';
 import { data } from '@/appdata/data.js';
+import AddItemForm from './AddItemForm.vue';
 import { filterBy } from '@progress/kendo-data-query';
 
 const delay = 500;
-const courtlist = [];
+let courtlist = [];
 let categorylist = [];
 export default {
     components: {
@@ -82,7 +85,8 @@ export default {
         'kbutton': Button,
         'k-form': Form,
         'formcontent': FormContent,
-        dropdownlist: DropDownList
+        dropdownlist: DropDownList,
+        'dropdown': AddItemForm
     },
     computed:{
         hasCourt: function () {
@@ -96,7 +100,7 @@ export default {
             columns: [
                 { field: 'ID', editable: false, title: 'ID', width: '80px' },
                 { field: 'Date', title: 'Date', format: '{0:dd-MM-yyyy}', editor: 'date', width: '200px'},
-                { field: 'Item', title: 'Item' },
+                { field: 'Item', title: 'Item', cell: 'itemDropDown'},
                 { field: 'Price', title: 'Price', width: '100px' , editable: false},
                 { field: 'Quantity', title: 'Quantity', filter: 'numeric', width: '100px', editor: 'numeric' },
                 { field: 'Amount', title: 'Amount', width: '100px', editable: false },
@@ -124,6 +128,7 @@ export default {
           this.productInEdit = this.cloneProduct(dataItem);
        },
        loadCourtData(){
+        courtlist = [];
         let courtObject = {Court: data[0].Court};
         courtlist.push(courtObject)
         for (let x = 1; x < data.length; x++){
