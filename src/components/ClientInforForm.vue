@@ -42,6 +42,7 @@
 <script>
 import { Input, TextArea } from '@progress/kendo-vue-inputs';
 import { DatePicker } from '@progress/kendo-vue-dateinputs';
+import AddItemForm from './AddItemForm.vue';
 
 export default {
   components: {
