@@ -1,25 +1,25 @@
 <template>
   <div style="padding: 5px;">
     <div class="container text-left">
-      <div class="row align-text-start">
+      <div class="col-xs-12 col-md-6 row align-text-start">
         <div class="col">
-          <div class="mb-3">
+          <div>
         <datepicker
-        :required="true"
-        :defaultValue="defaultValue"
-        :label="'Invoice Date'"
-        :format="'yyyy-MM-dd'"></datepicker>
+          :required="true"
+          :defaultValue="defaultValue"
+          :label="'Invoice Date'"
+          :format="'yyyy-MM-dd'"
+        ></datepicker>
         </div>
-        <div class="mb-3">
+        <div >
           <KInput 
           :required="true"
           :label="'Client Name'"
-          
           ></KInput>
         </div>
         </div>
         <div class="col">
-          <div class="mb-3">
+          <div >
           Client Address
           <br/>
           <TextArea 
@@ -29,10 +29,11 @@
           :label="'Address'"
           ></TextArea>
         </div>
-        <div class="mb-3">
+        <div >
           <KInput 
           :label="'Client Email Address'"
-          :required="true"></KInput>
+          :required="true"
+          ></KInput>
         </div>
         </div>
       </div>
@@ -42,7 +43,6 @@
 <script>
 import { Input, TextArea } from '@progress/kendo-vue-inputs';
 import { DatePicker } from '@progress/kendo-vue-dateinputs';
-import AddItemForm from './AddItemForm.vue';
 
 export default {
   components: {

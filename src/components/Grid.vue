@@ -1,25 +1,45 @@
 <template>
-            <div class="container-fluid" >
+            <div  >
                 <div>
                     <div style="background-color: aliceblue; margin-bottom: 1%;">
-                        <h3>Add Invoice Information</h3>
+                        <h3 style="margin: 1%;">Add Invoice Information</h3>
                         <formcontent/>
                     </div>
                 </div>
             </div>
          <Grid ref="grid"
-            :style="{height: '300px'}"
+            :style="{height: '330px'}"
             :data-items="invItems"
             :columns="columns"
             :edit-field="'inEdit'">
         <template v-slot:myTemplate="{props}">
-            <custom :data-item="props.dataItem" 
+            <custom :data-item="props.dataItem"
                     @edit="edit"
                     @remove="remove"
+                    @save="save"
+                    @cancel="cancel"
                     />      
         </template>
-        <template v-slot:itemDropDown>
-            <dropdown/>
+        <template v-slot:itemDropDown="{ props }">
+            <dropdown
+            :data-item="props.dataItem"
+            :field="props.field"
+            @change="(e) => dropdownChange(e, props.dataItem)"
+            />
+        </template>
+        <template v-slot:quantity="{ props }">
+            <quantity
+            :data-item="props.dataItem"
+            :field="props.field"
+            @change="quantityChange(e)"
+            />
+        </template>
+        <template v-slot:Date="{ props }">
+            <Date
+            :data-item="props.dataItem"
+            :field="props.field"
+            @change="dateChange(event)"
+            />
         </template>
         <grid-toolbar>
             <dropdownlist
@@ -29,11 +49,12 @@
                 :name="'Court'"
                 @change="courtChange"
                 @filterchange="filterChangeCourt"
+                @close="courtClose"
+                @open="courtOpen"
                 :default-item="defaultCourt"
                 :value="court"
                 :filterable="true"
                 v-on:open="loadCourtData"
-                v-bind:courtValue
                 />
                 <dropdownlist
                 :style="{ width: '250px' }"
@@ -43,6 +64,8 @@
                 :text-field="'Category'"
                 @change="categoryChange"
                 @filterchange="filterChange"
+                @close="categoryClose"
+                @open="categoryOpen"
                 :default-item="defaultCategory"
                 :value="Category"
                 :filterable="true"
@@ -56,7 +79,8 @@
         <div style="padding: 10px; left: 0px;">
             <kbutton 
                     :theme-color="'primary'"
-                    type="submit" >
+                    type="submit" 
+                    @click="geninv">
                 Generate Invoice
             </kbutton>
         </div>
@@ -70,12 +94,18 @@ import { Form } from '@progress/kendo-vue-form';
 import FormContent from './ClientInforForm.vue';
 import { DropDownList } from '@progress/kendo-vue-dropdowns';
 import { data } from '@/appdata/data.js';
-import AddItemForm from './AddItemForm.vue';
+import AddItemForm from './ItemDropDown.vue';
 import { filterBy } from '@progress/kendo-data-query';
+import Quantity from './Quantity.vue';
+import Date from './Date.vue';
 
 const delay = 500;
 let courtlist = [];
 let categorylist = [];
+let courtValue = '';
+let categoryValue = '';
+let itemValue = '';
+
 export default {
     components: {
         'Grid': Grid,
@@ -86,11 +116,14 @@ export default {
         'k-form': Form,
         'formcontent': FormContent,
         dropdownlist: DropDownList,
-        'dropdown': AddItemForm
+        'dropdown': AddItemForm,
+        quantity: Quantity,
+        Date: Date
+
     },
     computed:{
         hasCourt: function () {
-      return this.court && this.court !== this.defaultCourt
+        return this.court && this.court !== this.defaultCourt
     }
     },
     data: function () {
@@ -99,10 +132,10 @@ export default {
             productInEdit: undefined,
             columns: [
                 { field: 'ID', editable: false, title: 'ID', width: '80px' },
-                { field: 'Date', title: 'Date', format: '{0:dd-MM-yyyy}', editor: 'date', width: '200px'},
+                { field: 'Date', title: 'Date', cell:'Date' , width: '200px'},
                 { field: 'Item', title: 'Item', cell: 'itemDropDown'},
                 { field: 'Price', title: 'Price', width: '100px' , editable: false},
-                { field: 'Quantity', title: 'Quantity', filter: 'numeric', width: '100px', editor: 'numeric' },
+                { field: 'Quantity', title: 'Quantity', width: '100px', cell: 'quantity'},
                 { field: 'Amount', title: 'Amount', width: '100px', editable: false },
                 { cell: 'myTemplate', width: '210px' }
             ],
@@ -116,16 +149,63 @@ export default {
         };
     },
     methods: {
+        dropdownChange: function (e) {
+            itemValue = '';
+            itemValue += e.target.value.Item;
+        },
+        save: function(e){
+            const newList = [];
+            let newItem = {};
+            for(let x = 0; x < this.invItems.length; x ++){
+                if(this.invItems[x].inEdit == true){
+                    newItem = {
+                        ID: this.invItems[x].ID,
+                        inEdit: false,
+                        ItemID: localStorage.getItem('itemID'),
+                        Item: localStorage.getItem('itemValue'),
+                        Quantity: localStorage.getItem('quantityValue'),
+                        Date: localStorage.getItem('dateValue'),
+                        Price: localStorage.getItem('itemPrice'),
+                        Amount: localStorage.getItem('itemPrice') * localStorage.getItem('quantityValue')
+                    }
+                    newList.push(newItem)
+                }
+                else{
+                    newList.push(this.invItems[x])
+                }
+            }
+            this.invItems = [];
+            this.invItems = newList;
+            itemValue = '';
+            localStorage.removeItem('quantityValue');
+            localStorage.removeItem('dateValue');
+        },
         addNewItem(){
-            const dataItem = { inEdit: true };
+            const dataItem = { 
+                ID: this.invItems.length + 1,
+                inEdit: true
+            };
             this.invItems.splice(0, 0, dataItem)
         },
         geninv(){
             this.$router.push('/invoice');
         },
-       edit(dataItem) {
-          dataItem
-          this.productInEdit = this.cloneProduct(dataItem);
+       edit: function(e) {
+        e.dataItem.inEdit = true;
+        console.log(e.dataItem.Price)
+        localStorage.removeItem('itemValue');
+        localStorage.removeItem('itemID');
+        localStorage.removeItem('quantityValue');
+        localStorage.removeItem('dateValue');
+        localStorage.removeItem('itemPrice');
+        localStorage.setItem('itemID', e.dataItem.ItemID);
+        localStorage.setItem('quantityValue', e.dataItem.Quantity);
+        localStorage.setItem('dateValue', e.dataItem.Date);
+        localStorage.setItem('itemPrice', e.dataItem.Price);
+        localStorage.setItem('itemValue', e.dataItem.Item);
+       },
+       cancel: function(e) {
+        e.dataItem.inEdit = false;
        },
        loadCourtData(){
         courtlist = [];
@@ -143,6 +223,7 @@ export default {
         this.courtData = courtlist;
        },
        courtChange(event) {
+        window.localStorage.removeItem('courtValue');
         categorylist = [];
         const court1 = event.value;
         const products = data.filter(
@@ -162,10 +243,17 @@ export default {
         this.Category = null;
         this.court = court1;
         this.categoryData = categorylist;
+        courtValue = '';
+        courtValue += court1.Court;
+        window.localStorage.setItem('courtValue', courtValue);
         },
        categoryChange(event) {
+        window.localStorage.removeItem('categoryValue');
         const category1 = event.value;
         this.Category = category1;
+        categoryValue = '';
+        categoryValue += category1.Category;
+        window.localStorage.setItem('categoryValue', categoryValue);
         },
         filterChange(event) {
         clearTimeout(this.timeout);
@@ -193,28 +281,32 @@ export default {
         const data = courtlist.slice();
         return filterBy(data, filter);
         },
-       remove(dataItem) {
-          const dataList = [];
-          for (let item of this.products){
-            if( item.ID !== dataItem.ID){
-                dataList.push(item);
+       remove(e) {
+            let newList = [];
+            for(let x = 0; x < this.invItems.length; x ++){
+                if( this.invItems[x].ID == e.dataItem.ID){
+                    continue;
+                }
+                else{
+                    if(this.invItems.length == 1){
+                        newList = [];
+                    }
+                    else{
+                        newList.push(this.invItems[x]);
+                    }
+                }
+            }
+            for(let i = 1; i < newList.length ; i++){
+                newList[i].ID = newList.length - i;
+            }
+            if(newList.length == 0)
+            {
+                newList = [];
             }
             else{
-                continue;
+                newList[0].ID = newList.length;
             }
-          }
-          let arrNo = dataList.length + 1;
-          for (let x = 0; x < dataList.length; x ++){
-            dataList[x].ID = arrNo - 1;
-            arrNo --;
-          };
-          let size = this.products.length;
-          for (let x = 0; x < size; x++){
-            this.products.pop();
-          };
-          for(let item of dataList){
-            this.products.push(item)
-          };
+            this.invItems = newList;
         },
     }
 };
