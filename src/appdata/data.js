@@ -182,7 +182,7 @@ const data = [
       "Category": "CONSULTATIONS, APPEARANCES, CONFERENCES AND INSPECTIONS",
       "ItemId": 10,
       "Item": "Appearance by an attorney in court or the performance by an attorney of any of the other functions of an advocate, in terms of the [Right of Appearance in courts Act, 1995 (act No. 62 of 1995)] Legal Practice Act 2014 (Act No. 28 of 2014)",
-      "Price": " The tariff under rule 69 shall apply {Advocates} "
+      "Price": "The tariff under rule 69 shall apply {Advocates}"
      },
      {
       "Id": 25,
