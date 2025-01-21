@@ -9,9 +9,18 @@
             </div>
          <Grid ref="grid"
             :style="{height: '330px'}"
-            :data-items="invItems"
+            :data-items="items"
+            :loader="loader"
             :columns="columns"
             :edit-field="'inEdit'">
+            <template v-slot:loader>
+                <div class="k-loader-container k-loader-container-md k-loader-top">
+                <div class="k-loader-container-overlay k-overlay-dark" style="background-color: lightgray;" />
+                <div class="k-loader-container-inner" >
+                    <Loader :size="'large'" :type="type" />
+                </div>
+                </div>
+            </template>
         <template v-slot:myTemplate="{props}">
             <custom :data-item="props.dataItem"
                     @edit="edit"
@@ -24,21 +33,18 @@
             <dropdown
             :data-item="props.dataItem"
             :field="props.field"
-            @change="(e) => dropdownChange(e, props.dataItem)"
             />
         </template>
         <template v-slot:quantity="{ props }">
             <quantity
             :data-item="props.dataItem"
             :field="props.field"
-            @change="quantityChange(e)"
             />
         </template>
         <template v-slot:Date="{ props }">
             <Date
             :data-item="props.dataItem"
             :field="props.field"
-            @change="dateChange(event)"
             />
         </template>
         <grid-toolbar>
@@ -87,7 +93,6 @@
 </template>
 <script>
 import { Grid, GridToolbar, GridNoRecords } from '@progress/kendo-vue-grid';
-import { items } from '@/appdata/InvoiceItems.js';
 import CommandCell from './CommandCell.vue';
 import { Button } from '@progress/kendo-vue-buttons';
 import { Form } from '@progress/kendo-vue-form';
@@ -98,13 +103,14 @@ import AddItemForm from './ItemDropDown.vue';
 import { filterBy } from '@progress/kendo-data-query';
 import Quantity from './Quantity.vue';
 import Date from './Date.vue';
+import { Loader } from '@progress/kendo-vue-indicators';
 
 const delay = 500;
 let courtlist = [];
 let categorylist = [];
 let courtValue = '';
 let categoryValue = '';
-let itemValue = '';
+const str = localStorage.getItem('InvNo');
 
 export default {
     components: {
@@ -118,17 +124,18 @@ export default {
         dropdownlist: DropDownList,
         'dropdown': AddItemForm,
         quantity: Quantity,
-        Date: Date
-
+        Date: Date,
+        Loader
     },
     computed:{
         hasCourt: function () {
-        return this.court && this.court !== this.defaultCourt
-    }
+            return this.court && this.court !== this.defaultCourt
+        },
     },
     data: function () {
         return {
-            invItems: items,
+            loader: false,
+            items: [],
             productInEdit: undefined,
             columns: [
                 { field: 'ID', editable: false, title: 'ID', width: '80px' },
@@ -148,61 +155,83 @@ export default {
             data: data,
         };
     },
+    beforeCreate(){
+        setTimeout(() => {
+            this.getFunction();
+        }, 1000);
+    },
+    updated(){
+        //this.loader = false;
+    },
     methods: {
-        dropdownChange: function (e) {
-            itemValue = '';
-            itemValue += e.target.value.Item;
-        },
-        save: function(e){
-            const newList = [];
-            let newItem = {};
-            for(let x = 0; x < this.invItems.length; x ++){
-                if(this.invItems[x].inEdit == true){
-                    newItem = {
-                        ID: this.invItems[x].ID,
-                        inEdit: false,
-                        ItemID: localStorage.getItem('itemID'),
-                        Item: localStorage.getItem('itemValue'),
-                        Quantity: localStorage.getItem('quantityValue'),
-                        Date: localStorage.getItem('dateValue'),
-                        Price: localStorage.getItem('itemPrice'),
-                        Amount: localStorage.getItem('itemPrice') * localStorage.getItem('quantityValue')
+        getFunction(){
+            let testLst = [];
+            fetch('https://raven-8f178-default-rtdb.firebaseio.com/Invoices/INVNO'+ str +'.json'
+                ).then(
+                    res => res.json()
+                ).then( data => {
+                    if(data == null || data == undefined){
+                        testLst = [];
                     }
-                    newList.push(newItem)
+                    else{
+                        const lst =  Object.entries(data);
+                        for (let x = lst.length - 1; x > -1; x--){
+                            testLst.push(lst[x][1]);
+                        }
+                    }
+                    this.items = testLst;
                 }
-                else{
-                    newList.push(this.invItems[x])
-                }
+            );
+            if(testLst.length > 0){
+                this.loader = true;
             }
-            this.invItems = [];
-            this.invItems = newList;
-            itemValue = '';
-            localStorage.removeItem('quantityValue');
-            localStorage.removeItem('dateValue');
+            return testLst;
+         },
+        save: function(e){
+            let newItem = {
+                ID: e.dataItem.ID,
+                ItemID: localStorage.getItem('itemID'),
+                Item: localStorage.getItem('itemValue'),
+                Quantity: localStorage.getItem('quantityValue'),
+                Date: localStorage.getItem('dateValue'),
+                Price: localStorage.getItem('itemPrice'),
+                Amount: localStorage.getItem('itemPrice') * localStorage.getItem('quantityValue')
+            };
+            this.items.splice(0, 1, newItem);
+            e.dataItem.inEdit = false;
         },
         addNewItem(){
             const dataItem = { 
-                ID: this.invItems.length + 1,
+                ID: this.items.length + 1,
                 inEdit: true
             };
-            this.invItems.splice(0, 0, dataItem)
+            this.items.splice(0, 0, dataItem)
         },
         geninv(){
+            for (let x = this.items.length - 1; x > -1 ; x--){
+                const itemNo = this.items[x].ID;
+                fetch('https://raven-8f178-default-rtdb.firebaseio.com/Invoices/INVNO'+ str + '/ItemNo' + itemNo +'.json',{
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify(this.items[x])
+                });
+            }
             this.$router.push('/invoice');
         },
        edit: function(e) {
-        e.dataItem.inEdit = true;
-        console.log(e.dataItem.Price)
-        localStorage.removeItem('itemValue');
-        localStorage.removeItem('itemID');
-        localStorage.removeItem('quantityValue');
-        localStorage.removeItem('dateValue');
-        localStorage.removeItem('itemPrice');
-        localStorage.setItem('itemID', e.dataItem.ItemID);
-        localStorage.setItem('quantityValue', e.dataItem.Quantity);
-        localStorage.setItem('dateValue', e.dataItem.Date);
-        localStorage.setItem('itemPrice', e.dataItem.Price);
-        localStorage.setItem('itemValue', e.dataItem.Item);
+            e.dataItem.inEdit = true;
+            localStorage.removeItem('itemValue');
+            localStorage.removeItem('itemID');
+            localStorage.removeItem('quantityValue');
+            localStorage.removeItem('dateValue');
+            localStorage.removeItem('itemPrice');
+            localStorage.setItem('itemID', e.dataItem.ItemID);
+            localStorage.setItem('quantityValue', e.dataItem.Quantity);
+            localStorage.setItem('dateValue', e.dataItem.Date);
+            localStorage.setItem('itemPrice', e.dataItem.Price);
+            localStorage.setItem('itemValue', e.dataItem.Item);
        },
        cancel: function(e) {
         e.dataItem.inEdit = false;
@@ -223,91 +252,81 @@ export default {
         this.courtData = courtlist;
        },
        courtChange(event) {
-        window.localStorage.removeItem('courtValue');
-        categorylist = [];
-        const court1 = event.value;
-        const products = data.filter(
-        (Court) => Court.Court === court1.Court
-        );
-        let categoryObject = {Category: products[0].Category};
-        categorylist.push(categoryObject)
-        for (let x = 1; x < products.length; x++){
-            if(products[x].Category ==  products[x - 1].Category){
-                continue
+            window.localStorage.removeItem('courtValue');
+            categorylist = [];
+            const court1 = event.value;
+            const products = data.filter(
+            (Court) => Court.Court === court1.Court
+            );
+            let categoryObject = {Category: products[0].Category};
+            categorylist.push(categoryObject)
+            for (let x = 1; x < products.length; x++){
+                if(products[x].Category ==  products[x - 1].Category){
+                    continue
+                }
+                else{
+                    let categoryObject = {Category: products[x].Category};
+                    categorylist.push(categoryObject)
+                }
             }
-            else{
-                let categoryObject = {Category: products[x].Category};
-                categorylist.push(categoryObject)
-            }
-        }
-        this.Category = null;
-        this.court = court1;
-        this.categoryData = categorylist;
-        courtValue = '';
-        courtValue += court1.Court;
-        window.localStorage.setItem('courtValue', courtValue);
+            this.Category = null;
+            this.court = court1;
+            this.categoryData = categorylist;
+            courtValue = '';
+            courtValue += court1.Court;
+            window.localStorage.setItem('courtValue', courtValue);
         },
        categoryChange(event) {
-        window.localStorage.removeItem('categoryValue');
-        const category1 = event.value;
-        this.Category = category1;
-        categoryValue = '';
-        categoryValue += category1.Category;
-        window.localStorage.setItem('categoryValue', categoryValue);
+            window.localStorage.removeItem('categoryValue');
+            const category1 = event.value;
+            this.Category = category1;
+            categoryValue = '';
+            categoryValue += category1.Category;
+            window.localStorage.setItem('categoryValue', categoryValue);
         },
         filterChange(event) {
-        clearTimeout(this.timeout);
-        this.timeout = setTimeout(() => {
-            this.categoryData = this.filterData(event.filter);
-            this.loading = false;
-        }, delay);
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+                this.categoryData = this.filterData(event.filter);
+                this.loading = false;
+            }, delay);
 
-        this.loading = true;
+            this.loading = true;
         },
-            filterData(filter) {
-                const data = categorylist.slice();
-                return filterBy(data, filter);
-            },
+        filterData(filter) {
+            const data = categorylist.slice();
+            return filterBy(data, filter);
+        },
         filterChangeCourt(event) {
-        clearTimeout(this.timeout);
-        this.timeout = setTimeout(() => {
-            this.courtData = this.filterCourtData(event.filter);
-            this.loading = false;
-            
-        }, delay);
-        this.loading = true;
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+                this.courtData = this.filterCourtData(event.filter);
+                this.loading = false;
+                
+            }, delay);
+            this.loading = true;
+            },
+            filterCourtData(filter) {
+            const data = courtlist.slice();
+            return filterBy(data, filter);
         },
-        filterCourtData(filter) {
-        const data = courtlist.slice();
-        return filterBy(data, filter);
-        },
-       remove(e) {
-            let newList = [];
-            for(let x = 0; x < this.invItems.length; x ++){
-                if( this.invItems[x].ID == e.dataItem.ID){
+        remove(e) {
+            const lst = [];
+            for (let item of this.items){
+                if(item.ID == e.dataItem.ID){
                     continue;
                 }
                 else{
-                    if(this.invItems.length == 1){
-                        newList = [];
-                    }
-                    else{
-                        newList.push(this.invItems[x]);
-                    }
-                }
+                    lst.push(item);
+                } 
             }
-            for(let i = 1; i < newList.length ; i++){
-                newList[i].ID = newList.length - i;
+            const lst2 = [];
+            for(let x = 0; x < lst.length; x++){
+                lst[x].ID = x + 1;
+                lst2.splice(0, 0, lst[x])
             }
-            if(newList.length == 0)
-            {
-                newList = [];
-            }
-            else{
-                newList[0].ID = newList.length;
-            }
-            this.invItems = newList;
-        },
+            this.items = lst2;
+        }
     }
 };
 
