@@ -34,7 +34,7 @@ export default{
                 day = '0' + day
             }
             let date = d.getFullYear() + '/' + month + '/' + day;
-            localStorage.setItem('dateValue',date);
+            localStorage.setItem('dateValue', date);
         }
     }
 }

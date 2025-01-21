@@ -1,3 +1,3 @@
-
-export const items = [  
+const items = [  
 ];
+export {items};
